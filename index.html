@@ -107,7 +107,7 @@ tr:hover td{background:rgba(0,0,0,0.03)}
   </div>
   <div style="font-size:12px;color:var(--muted)" id="headerSub">กันยายน 2569 · เลือกดูรายวันได้ 1–30</div>
 </div>
-<div class="notice">⚠️ หมายเหตุ: กำลังผลิตรายวันใช้ค่า <b>"คิวต่อวัน" ตามชีตกำลังการผลิตเต็มที่ ปี 2569</b> ของแต่ละรายการ (เช่น รั้วสำเร็จรูป 20 คิว/วัน × 23 วัน = 460 คิว/เดือน) — รวมทุกโรงงาน 1,810 คิว/วัน</div>
+<div class="notice">⚠️ หมายเหตุ: กำลังผลิตรายวันใช้ค่า <b>"คิวต่อวัน" ตามชีตกำลังการผลิตเต็มที่ ปี 2569</b> ของแต่ละรายการ — รวมทุกโรงงาน 1,810 คิว/วัน · <b>ตั้งแต่ มิ.ย. 2569</b> ปรับรั้วสำเร็จรูป 20 → 25 คิว/วัน (460 → 575 คิว/เดือน) และคอนกรีตผสมเสร็จ P5 295 → 290 คิว/วัน</div>
 
 <div class="month-bar-wrap">
   <div class="month-bar-lbl">เลือกเดือน</div>
@@ -137,30 +137,28 @@ const PRODS  = ['คอนกรีตผสมเสร็จ','ท่อระ
 const PROD_COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#14b8a6','#ef4444','#f97316'];
 const PLANT_NAMES = ['พัทยา','นาวัง','หนองปรือ','ปทุมธานี'];
 const PLANT_COLORS = ['#3b82f6','#10b981','#8b5cf6','#f59e0b'];
-const CAP_PROD_M = [19700,8375,3540,3760,460,460,600];
-const PLANT_CAP_M = [13800,18555,1540,3000]; // นาวัง 18,555 (รวม 4 โรงงาน = 36,895 = TOTAL_CAP_M)
-const TOTAL_CAP_M = 36895;
 const LINE_LABELS = ['พัทยา — P1','พัทยา — P2','นาวัง — โรงท่อ 1','นาวัง — โรงท่อ 2','นาวัง — โรงท่อ 3','นาวัง — แพล้นท์ 5','นาวัง — โรงแผ่นทางเท้า','หนองปรือ — เสาเข็ม','ปทุมธานี — แผ่นพื้น','ปทุมธานี — เสาเข็ม'];
-const LINE_CAP_M = [9600,4200,2400,3000,2400,10155,600,1540,1000,2000];
 // กำลังผลิตต่อวัน = คอลัมน์ "คิวต่อวัน" (F) ในชีต "กำลังการผลิตเต็มที่ ปี2569" ของ Excel ต้นทาง
-// แต่ละรายการใช้วันทำงานจริงของตัวเอง (คอลัมน์ L) — คิว/วัน × วัน/เดือน = กำลังผลิตต่อเดือน (คอลัมน์ J)
-const DAY_CAP_SRC = {
-  pt_slab:50,  pt_pile:100,                        // ปทุมธานี แผ่นพื้น / เสาเข็ม      (20 วัน/เดือน)
-  np_pile:70,                                      // หนองปรือ เสาเข็ม                (22 วัน/เดือน) Excel = 70.0015
-  p1:480, p2:210,                                  // พัทยา P1 / P2                    (20 วัน/เดือน)
-  pipe1:120, pipe2:150, pipe3:120,                 // นาวัง โรงท่อ 1 / 2 / 3           (20 วัน/เดือน)
-  manhole:25, nw_slab:120, fence:20, other:20,     // นาวัง บ่อพัก/แผ่นพื้น/รั้ว/อื่นๆ  (23 วัน/เดือน)
-  rmc_p5:295,                                      // นาวัง คอนกรีตผสมเสร็จ P5         (20 วัน/เดือน)
-  walk:30                                          // นาวัง แผ่นทางเท้าและคันหิน       (20 วัน/เดือน)
-};
-const _C = DAY_CAP_SRC;
-// Line: P1, P2, โรงท่อ1, โรงท่อ2, โรงท่อ3, แพล้นท์ 5 (บ่อพัก+แผ่นพื้น+รั้ว+อื่นๆ+ผสมเสร็จP5 = 480), ทางเท้า, หนองปรือ, ปทุมแผ่นพื้น, ปทุมเสาเข็ม
-const LINE_CAP  = [_C.p1, _C.p2, _C.pipe1, _C.pipe2, _C.pipe3, _C.manhole+_C.nw_slab+_C.fence+_C.other+_C.rmc_p5, _C.walk, _C.np_pile, _C.pt_slab, _C.pt_pile];
-// สินค้า: ผสมเสร็จ, ท่อระบายน้ำ(ท่อ1-3+บ่อพัก), เสาเข็ม, แผ่นพื้น, รั้ว, อื่นๆ, ทางเท้า
-const CAP_PROD  = [_C.p1+_C.p2+_C.rmc_p5, _C.pipe1+_C.pipe2+_C.pipe3+_C.manhole, _C.np_pile+_C.pt_pile, _C.nw_slab+_C.pt_slab, _C.fence, _C.other, _C.walk];
-// โรงงาน: พัทยา, นาวัง, หนองปรือ, ปทุมธานี
-const PLANT_CAP = [_C.p1+_C.p2, _C.pipe1+_C.pipe2+_C.pipe3+_C.manhole+_C.nw_slab+_C.fence+_C.other+_C.rmc_p5+_C.walk, _C.np_pile, _C.pt_slab+_C.pt_pile];
-const TOTAL_CAP = LINE_CAP.reduce((a,b)=>a+b,0);   // 1,810 คิว/วัน
+// กำลังผลิตต่อเดือน = คิว/วัน × วันทำงานจริงของแต่ละรายการ (คอลัมน์ L: 20 / 22 / 23 วัน)
+// มีการปรับตั้งแต่ มิ.ย. 2569: รั้วสำเร็จรูป 20 → 25 คิว/วัน, คอนกรีตผสมเสร็จ P5 295 → 290 คิว/วัน (แพล้นท์ 5 รวมยังเป็น 480)
+const CAP_ITEM_DAYS = {pt_slab:20, pt_pile:20, np_pile:22, p1:20, p2:20, pipe1:20, pipe2:20, pipe3:20, manhole:23, nw_slab:23, fence:23, other:23, rmc_p5:20, walk:20};
+const DAY_CAP_SETS = [
+  {from:0, src:{pt_slab:50, pt_pile:100, np_pile:70, p1:480, p2:210, pipe1:120, pipe2:150, pipe3:120, manhole:25, nw_slab:120, fence:20, other:20, rmc_p5:295, walk:30}}, // ม.ค.–พ.ค.
+  {from:5, src:{pt_slab:50, pt_pile:100, np_pile:70, p1:480, p2:210, pipe1:120, pipe2:150, pipe3:120, manhole:25, nw_slab:120, fence:25, other:20, rmc_p5:290, walk:30}}, // ตั้งแต่ มิ.ย.
+]; // หนองปรือใน Excel = 70.0015 คิว/วัน ใช้ 70 ให้ตรงกับ 1,540 คิว/เดือน
+function buildCaps(C){
+  const line  = C => [C.p1, C.p2, C.pipe1, C.pipe2, C.pipe3, C.manhole+C.nw_slab+C.fence+C.other+C.rmc_p5, C.walk, C.np_pile, C.pt_slab, C.pt_pile];
+  const prod  = C => [C.p1+C.p2+C.rmc_p5, C.pipe1+C.pipe2+C.pipe3+C.manhole, C.np_pile+C.pt_pile, C.nw_slab+C.pt_slab, C.fence, C.other, C.walk];
+  const plant = C => [C.p1+C.p2, C.pipe1+C.pipe2+C.pipe3+C.manhole+C.nw_slab+C.fence+C.other+C.rmc_p5+C.walk, C.np_pile, C.pt_slab+C.pt_pile];
+  const M = {}; Object.keys(C).forEach(k=>M[k]=C[k]*CAP_ITEM_DAYS[k]);   // กำลังผลิตต่อเดือนของแต่ละรายการ
+  return {LINE_CAP:line(C), CAP_PROD:prod(C), PLANT_CAP:plant(C), TOTAL_CAP:line(C).reduce((a,b)=>a+b,0),
+          LINE_CAP_M:line(M), CAP_PROD_M:prod(M), PLANT_CAP_M:plant(M), TOTAL_CAP_M:line(M).reduce((a,b)=>a+b,0)};
+}
+let LINE_CAP, CAP_PROD, PLANT_CAP, TOTAL_CAP, LINE_CAP_M, CAP_PROD_M, PLANT_CAP_M, TOTAL_CAP_M;
+function applyCaps(mi){
+  const set = DAY_CAP_SETS.filter(c=>c.from<=mi).pop();
+  ({LINE_CAP, CAP_PROD, PLANT_CAP, TOTAL_CAP, LINE_CAP_M, CAP_PROD_M, PLANT_CAP_M, TOTAL_CAP_M} = buildCaps(set.src));
+}
 const WD = ['จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์','อาทิตย์'];
 const WD_SHORT = ['จ','อ','พ','พฤ','ศ','ส','อา'];
 
@@ -483,6 +481,7 @@ const DAILY_DATA = [
 ],
 ];;
 let currentMonthIdx = 8; // เริ่มที่กันยายน (เดือนล่าสุด)
+applyCaps(currentMonthIdx);
 let currentDay = 1;
 let viewMode = 'day';
 const chartInstances = {};
@@ -500,6 +499,7 @@ MONTHS_META.forEach((mm,idx)=>{
 
 function selectMonth(idx){
   currentMonthIdx = idx;
+  applyCaps(idx);
   document.querySelectorAll('.month-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(`monthtab-${idx}`).classList.add('active');
   const _mm = MONTHS_META[idx];
