@@ -107,7 +107,7 @@ tr:hover td{background:rgba(0,0,0,0.03)}
   </div>
   <div style="font-size:12px;color:var(--muted)" id="headerSub">กันยายน 2569 · เลือกดูรายวันได้ 1–30</div>
 </div>
-<div class="notice">⚠️ หมายเหตุ: กำลังผลิตรายวันของแต่ละ Line คำนวณจาก <b>กำลังผลิตเต็มที่ต่อเดือน ÷ วันทำงานจริงของ Line นั้น</b> (20 วัน สำหรับ Line ทั่วไป, 22 วัน สำหรับแพล้นท์ 5 และหนองปรือ) ส่วนกำลังผลิตระดับสินค้า/โรงงานใช้วันทำงานถัวเฉลี่ยถ่วงน้ำหนัก</div>
+<div class="notice">⚠️ หมายเหตุ: กำลังผลิตรายวันใช้ค่า <b>"คิวต่อวัน" ตามชีตกำลังการผลิตเต็มที่ ปี 2569</b> ของแต่ละรายการ (เช่น รั้วสำเร็จรูป 20 คิว/วัน × 23 วัน = 460 คิว/เดือน) — รวมทุกโรงงาน 1,810 คิว/วัน</div>
 
 <div class="month-bar-wrap">
   <div class="month-bar-lbl">เลือกเดือน</div>
@@ -142,12 +142,25 @@ const PLANT_CAP_M = [13800,18555,1540,3000]; // นาวัง 18,555 (รว�
 const TOTAL_CAP_M = 36895;
 const LINE_LABELS = ['พัทยา — P1','พัทยา — P2','นาวัง — โรงท่อ 1','นาวัง — โรงท่อ 2','นาวัง — โรงท่อ 3','นาวัง — แพล้นท์ 5','นาวัง — โรงแผ่นทางเท้า','หนองปรือ — เสาเข็ม','ปทุมธานี — แผ่นพื้น','ปทุมธานี — เสาเข็ม'];
 const LINE_CAP_M = [9600,4200,2400,3000,2400,10155,600,1540,1000,2000];
-const LINE_WORKING_DAYS = [20,20,20,20,20,22,20,22,20,20];
-const LINE_CAP = LINE_CAP_M.map((c,i)=>c/LINE_WORKING_DAYS[i]);
-const TOTAL_CAP = LINE_CAP.reduce((a,b)=>a+b,0);
-const BLENDED_DAYS = TOTAL_CAP_M/TOTAL_CAP;
-const CAP_PROD = CAP_PROD_M.map(c=>c/BLENDED_DAYS);
-const PLANT_CAP = PLANT_CAP_M.map(c=>c/BLENDED_DAYS);
+// กำลังผลิตต่อวัน = คอลัมน์ "คิวต่อวัน" (F) ในชีต "กำลังการผลิตเต็มที่ ปี2569" ของ Excel ต้นทาง
+// แต่ละรายการใช้วันทำงานจริงของตัวเอง (คอลัมน์ L) — คิว/วัน × วัน/เดือน = กำลังผลิตต่อเดือน (คอลัมน์ J)
+const DAY_CAP_SRC = {
+  pt_slab:50,  pt_pile:100,                        // ปทุมธานี แผ่นพื้น / เสาเข็ม      (20 วัน/เดือน)
+  np_pile:70,                                      // หนองปรือ เสาเข็ม                (22 วัน/เดือน) Excel = 70.0015
+  p1:480, p2:210,                                  // พัทยา P1 / P2                    (20 วัน/เดือน)
+  pipe1:120, pipe2:150, pipe3:120,                 // นาวัง โรงท่อ 1 / 2 / 3           (20 วัน/เดือน)
+  manhole:25, nw_slab:120, fence:20, other:20,     // นาวัง บ่อพัก/แผ่นพื้น/รั้ว/อื่นๆ  (23 วัน/เดือน)
+  rmc_p5:295,                                      // นาวัง คอนกรีตผสมเสร็จ P5         (20 วัน/เดือน)
+  walk:30                                          // นาวัง แผ่นทางเท้าและคันหิน       (20 วัน/เดือน)
+};
+const _C = DAY_CAP_SRC;
+// Line: P1, P2, โรงท่อ1, โรงท่อ2, โรงท่อ3, แพล้นท์ 5 (บ่อพัก+แผ่นพื้น+รั้ว+อื่นๆ+ผสมเสร็จP5 = 480), ทางเท้า, หนองปรือ, ปทุมแผ่นพื้น, ปทุมเสาเข็ม
+const LINE_CAP  = [_C.p1, _C.p2, _C.pipe1, _C.pipe2, _C.pipe3, _C.manhole+_C.nw_slab+_C.fence+_C.other+_C.rmc_p5, _C.walk, _C.np_pile, _C.pt_slab, _C.pt_pile];
+// สินค้า: ผสมเสร็จ, ท่อระบายน้ำ(ท่อ1-3+บ่อพัก), เสาเข็ม, แผ่นพื้น, รั้ว, อื่นๆ, ทางเท้า
+const CAP_PROD  = [_C.p1+_C.p2+_C.rmc_p5, _C.pipe1+_C.pipe2+_C.pipe3+_C.manhole, _C.np_pile+_C.pt_pile, _C.nw_slab+_C.pt_slab, _C.fence, _C.other, _C.walk];
+// โรงงาน: พัทยา, นาวัง, หนองปรือ, ปทุมธานี
+const PLANT_CAP = [_C.p1+_C.p2, _C.pipe1+_C.pipe2+_C.pipe3+_C.manhole+_C.nw_slab+_C.fence+_C.other+_C.rmc_p5+_C.walk, _C.np_pile, _C.pt_slab+_C.pt_pile];
+const TOTAL_CAP = LINE_CAP.reduce((a,b)=>a+b,0);   // 1,810 คิว/วัน
 const WD = ['จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์','อาทิตย์'];
 const WD_SHORT = ['จ','อ','พ','พฤ','ศ','ส','อา'];
 
